@@ -1,0 +1,44 @@
+{
+  "name": "Study setup control",
+  "run-name": "setup/control ${{ github.event_name }} ${{ github.event.ref || github.ref }}",
+  "on": {
+    "push": {
+      "branches": [
+        "main"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "marker": {
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 3,
+      "env": {
+        "CASE": "setup",
+        "VARIANT": "control",
+        "WORKFLOW_REF": "${{ github.workflow_ref }}",
+        "WORKFLOW_SHA": "${{ github.workflow_sha }}"
+      },
+      "steps": [
+        {
+          "name": "Native identity marker",
+          "run": "python3 - <<'PY'\nimport json,os\nkeys=['CASE','VARIANT','GITHUB_EVENT_NAME','GITHUB_SHA','GITHUB_REF','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','WORKFLOW_REF','WORKFLOW_SHA']\nprint('STUDY_MARKER '+json.dumps({k:os.environ.get(k) for k in keys},sort_keys=True))\nPY"
+        },
+        {
+          "name": "Retain native event separately",
+          "run": "cp \"$GITHUB_EVENT_PATH\" native-event.json"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "native-event-${{ github.run_id }}",
+            "path": "native-event.json",
+            "retention-days": 30
+          }
+        }
+      ]
+    }
+  }
+}
